@@ -1,0 +1,24 @@
+body {
+  background-image: url("../../assets/background-image.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100vw;
+  height: 100vh;
+}
+.todo {
+  position: fixed;
+  inset: 0;
+  width: 25rem;
+  height: 20rem;
+  max-width: 100vw;
+  max-height: 190dvh;
+  margin: auto;
+  &__card {
+    max-width: 25rem;
+  }
+}
+
+a:hover {
+  cursor: pointer;
+}
