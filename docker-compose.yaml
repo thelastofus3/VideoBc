@@ -8,6 +8,7 @@ services:
   backend:
     build:
       context: ./video-backend
+      dockerfile: Dockerfile
     container_name: quarkus-backend
     ports:
       - "8080:8080"
@@ -94,6 +95,7 @@ services:
   frontend:
     build:
       context: ./video-frontend
+      dockerfile: Dockerfile
     container_name: react-frontend
     ports:
       - "80:80"
