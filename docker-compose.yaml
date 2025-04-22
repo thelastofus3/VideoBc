@@ -20,7 +20,7 @@ services:
       - QUARKUS_DATASOURCE_USERNAME=${MYSQL_USER}
       - QUARKUS_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - QUARKUS_HTTP_CORS=true
-      - QUARKUS_HTTP_CORS_ORIGINS=http://localhost:3000
+      - QUARKUS_HTTP_CORS_ORIGINS=*
       - QUARKUS_HTTP_CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
       - QUARKUS_HTTP_CORS_HEADERS=accept,authorization,content-type,x-requested-with
       - QUARKUS_HTTP_CORS_EXPOSED_HEADERS=Authorization
@@ -96,7 +96,7 @@ services:
       context: ./video-frontend
     container_name: react-frontend
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - mysql
       - kafka
