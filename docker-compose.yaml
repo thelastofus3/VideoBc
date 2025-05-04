@@ -1,10 +1,29 @@
 version: '3.8'
 
 volumes:
+  traefik-certificates:
   db:
   redis-data:
 
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    ports:
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certificates:/letsencrypt
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.le.acme.email=youremail@example.com"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+    networks:
+      - kafka-network
   backend:
     build:
       context: ./video-backend
@@ -25,6 +44,12 @@ services:
       - QUARKUS_HTTP_CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
       - QUARKUS_HTTP_CORS_HEADERS=accept,authorization,content-type,x-requested-with
       - QUARKUS_HTTP_CORS_EXPOSED_HEADERS=Authorization
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.videoconf.store`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=le"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
     networks:
       - kafka-network
 
@@ -104,6 +129,12 @@ services:
       - kafka
       - redis
       - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`videoconf.store`,`www.videoconf.store`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=le"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
     networks:
       - kafka-network
 
