@@ -1,11 +1,16 @@
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /project
+COPY . .
+RUN mvn clean package -DskipTests
+
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
 
 ENV LANGUAGE='en_US:en'
 
-COPY --chown=185 target/quarkus-app/lib /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus /deployments/quarkus/
+COPY --chown=185 --from=build /project/target/quarkus-app/lib /deployments/lib/
+COPY --chown=185 --from=build /project/target/quarkus-app/*.jar /deployments/
+COPY --chown=185 --from=build /project/target/quarkus-app/app /deployments/app/
+COPY --chown=185 --from=build /project/target/quarkus-app/quarkus /deployments/quarkus/
 
 EXPOSE 8080
 USER 185

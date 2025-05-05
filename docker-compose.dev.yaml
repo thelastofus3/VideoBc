@@ -5,6 +5,28 @@ volumes:
   redis-data:
 
 services:
+  backend:
+    build:
+      context: ./video-backend
+      dockerfile: Dockerfile
+    container_name: quarkus-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - kafka
+      - redis
+    environment:
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      - QUARKUS_DATASOURCE_USERNAME=${MYSQL_USER}
+      - QUARKUS_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - QUARKUS_HTTP_CORS=true
+      - QUARKUS_HTTP_CORS_ORIGINS=*
+      - QUARKUS_HTTP_CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - QUARKUS_HTTP_CORS_HEADERS=accept,authorization,content-type,x-requested-with
+      - QUARKUS_HTTP_CORS_EXPOSED_HEADERS=Authorization
+    networks:
+      - kafka-network
 
   mysql:
     container_name: mysql
@@ -67,6 +89,21 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    networks:
+      - kafka-network
+
+  frontend:
+    build:
+      context: ./video-frontend
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - mysql
+      - kafka
+      - redis
+      - backend
     networks:
       - kafka-network
 
