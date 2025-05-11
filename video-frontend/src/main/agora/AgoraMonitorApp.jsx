@@ -33,13 +33,11 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
             }
         });
     };
-
-    const displayRemoteVideo = (user) => {
+    const displayRemoteVideo = (user, monitorRef) => {
         const remoteVideoTrack = user.videoTrack;
         const remoteVideoElement = document.createElement("video");
         remoteVideoTrack.play(remoteVideoElement);
-        // eslint-disable-next-line react/prop-types
-        updateMonitorTexture(remoteVideoElement, tvRefs.remote);
+        updateMonitorTexture(remoteVideoElement, monitorRef);
     };
 
     const displayLocalVideo = () => {
@@ -100,7 +98,6 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
     const setupEventListeners = (client) => {
         client.on("user-published", async (user, mediaType) => {
             await client.subscribe(user, mediaType);
-            console.log("subscribe success");
 
             if (mediaType === "video") {
                 setRemoteUsers(prev => {
@@ -109,10 +106,10 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
                     }
                     return prev;
                 });
-                displayRemoteVideo(user);
+                displayRemoteVideo(user, tvRefs.remote);
             }
             if (mediaType === "audio") {
-                user.audioTrack.play();
+                user.audioTrack?.play();
             }
         });
 

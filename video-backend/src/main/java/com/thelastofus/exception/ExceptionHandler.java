@@ -5,7 +5,6 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import org.apache.kafka.common.errors.InvalidRequestException;
 
 
 @Provider
@@ -21,10 +20,6 @@ public class ExceptionHandler implements ExceptionMapper<RuntimeException> {
                             .build()).build();
             case UsernameAlreadyExistsException usernameAlreadyExistsException ->
                     Response.status(Response.Status.CONFLICT).entity(ExceptionResponse.builder()
-                            .message(e.getMessage())
-                            .build()).build();
-            case InvalidRequestException invalidRequestException ->
-                    Response.status(Response.Status.BAD_REQUEST).entity(ExceptionResponse.builder()
                             .message(e.getMessage())
                             .build()).build();
             case ResourceNotFoundException resourceNotFoundException ->
