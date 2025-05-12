@@ -1,16 +1,17 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as THREE from "three";
 import AgoraRTC from "agora-rtc-react";
-import {agoraConfig, cameraConfig} from "../../config.jsx";
+import { agoraConfig, cameraConfig } from "../../config.jsx";
 import styles from '../styles/Main.module.scss';
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
+export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
     const [rtc] = useState({
         localAudioTrack: null,
         localVideoTrack: null,
         client: null,
     });
+
     const navigate = useNavigate();
 
     const [isCameraOn, setIsCameraOn] = useState(true);
@@ -18,8 +19,8 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
     const [isMicOn, setIsMicOn] = useState(true);
     const [isJoined, setIsJoined] = useState(false);
     const [options] = useState(agoraConfig);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
 
-    // Ref to store the original default material of the screen mesh
     const originalRemoteMaterial = useRef(null);
 
     const updateMonitorTexture = (videoElement, monitor) => {
@@ -29,7 +30,6 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
 
         monitor.current.traverse((node) => {
             if (node.isMesh && node.material.name === 'ScreenOn') {
-                // Save the original material for reset
                 if (!originalRemoteMaterial.current) {
                     originalRemoteMaterial.current = node.material.clone();
                 }
@@ -39,7 +39,6 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
         });
     };
 
-    // Clears the video texture and restores the original material
     const clearMonitorTexture = (monitor) => {
         if (!monitor.current || !originalRemoteMaterial.current) return;
         monitor.current.traverse((node) => {
@@ -106,6 +105,52 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
         }
     };
 
+    const startScreenShare = async () => {
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const screenTrack = AgoraRTC.createCustomVideoTrack({ mediaStreamTrack: screenStream.getVideoTracks()[0] });
+
+            // Заменить текущий видеотрек
+            if (rtc.localVideoTrack) {
+                await rtc.client.unpublish(rtc.localVideoTrack);
+                rtc.localVideoTrack.stop();
+                rtc.localVideoTrack.close();
+            }
+
+            rtc.localVideoTrack = screenTrack;
+            await rtc.client.publish([rtc.localVideoTrack]);
+            displayLocalVideo();
+            setIsScreenSharing(true);
+
+            screenStream.getVideoTracks()[0].addEventListener('ended', async () => {
+                await stopScreenShare();
+            });
+        } catch (err) {
+            console.error("Error starting screen share:", err);
+        }
+    };
+
+    const stopScreenShare = async () => {
+        if (rtc.localVideoTrack) {
+            await rtc.client.unpublish(rtc.localVideoTrack);
+            rtc.localVideoTrack.stop();
+            rtc.localVideoTrack.close();
+        }
+
+        rtc.localVideoTrack = await AgoraRTC.createCameraVideoTrack(cameraConfig);
+        await rtc.client.publish([rtc.localVideoTrack]);
+        displayLocalVideo();
+        setIsScreenSharing(false);
+    };
+
+    const toggleScreenShare = async () => {
+        if (isScreenSharing) {
+            await stopScreenShare();
+        } else {
+            await startScreenShare();
+        }
+    };
+
     const setupEventListeners = (client) => {
         client.on("user-published", async (user, mediaType) => {
             await client.subscribe(user, mediaType);
@@ -150,6 +195,9 @@ export const AgoraMonitorApp = ({tvRefs, userEmail, roomCode}) => {
                 )}
                 <button onClick={toggleCamera} className={`${styles.micAndCameraButton} ${!isCameraOn ? styles.redButton : ''}`}>Camera</button>
                 <button onClick={toggleMic} className={`${styles.micAndCameraButton} ${!isMicOn ? styles.redButton : ''}`}>Mic</button>
+                <button onClick={toggleScreenShare} className={`${styles.micAndCameraButton} ${isScreenSharing ? styles.redButton : ''}`}>
+                    {isScreenSharing ? "Stop Screen Share" : "Start Screen Share"}
+                </button>
             </div>
         </div>
     );
