@@ -13,15 +13,16 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
     });
 
     const navigate = useNavigate();
-
     const [isCameraOn, setIsCameraOn] = useState(true);
     const [remoteUsers, setRemoteUsers] = useState([]);
     const [isMicOn, setIsMicOn] = useState(true);
     const [isJoined, setIsJoined] = useState(false);
     const [options] = useState(agoraConfig);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [role, setRole] = useState(null); // "host" | "audience"
 
     const originalRemoteMaterial = useRef(null);
+    const originalLocalMaterial = useRef(null);
 
     const updateMonitorTexture = (videoElement, monitor) => {
         if (!monitor.current) return;
@@ -30,8 +31,10 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
 
         monitor.current.traverse((node) => {
             if (node.isMesh && node.material.name === 'ScreenOn') {
-                if (!originalRemoteMaterial.current) {
+                if (monitor === tvRefs.remote && !originalRemoteMaterial.current) {
                     originalRemoteMaterial.current = node.material.clone();
+                } else if (monitor === tvRefs.local && !originalLocalMaterial.current) {
+                    originalLocalMaterial.current = node.material.clone();
                 }
                 node.material = new THREE.MeshBasicMaterial({ map: videoTexture, name: 'ScreenOn' });
                 node.material.needsUpdate = true;
@@ -40,10 +43,17 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
     };
 
     const clearMonitorTexture = (monitor) => {
-        if (!monitor.current || !originalRemoteMaterial.current) return;
+        if (!monitor.current) return;
+
+        const originalMaterial = monitor === tvRefs.remote
+            ? originalRemoteMaterial.current
+            : originalLocalMaterial.current;
+
+        if (!originalMaterial) return;
+
         monitor.current.traverse((node) => {
             if (node.isMesh && node.material.name === 'ScreenOn') {
-                node.material = originalRemoteMaterial.current.clone();
+                node.material = originalMaterial.clone();
                 node.material.needsUpdate = true;
             }
         });
@@ -68,16 +78,22 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         await rtc.client.publish([rtc.localAudioTrack, rtc.localVideoTrack]);
     };
 
-    const joinChannel = async () => {
+    const joinChannel = async (selectedRole) => {
         try {
+            setRole(selectedRole);
+            await rtc.client.setClientRole(selectedRole);
             await rtc.client.join(
                 options.appId,
                 roomCode || options.channel,
                 options.token,
                 options.uid
             );
-            await createAndPublishLocalTracks();
-            displayLocalVideo();
+
+            if (selectedRole === "host") {
+                await createAndPublishLocalTracks();
+                displayLocalVideo();
+            }
+
             setIsJoined(true);
         } catch (error) {
             console.error("Error joining channel:", error);
@@ -88,6 +104,11 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         await rtc.client?.leave();
         rtc.localAudioTrack?.close();
         rtc.localVideoTrack?.close();
+        clearMonitorTexture(tvRefs.remote);
+        clearMonitorTexture(tvRefs.local);
+        setRemoteUsers([]);
+        setIsJoined(false);
+        setRole(null);
         navigate("/");
     };
 
@@ -110,7 +131,6 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
             const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             const screenTrack = AgoraRTC.createCustomVideoTrack({ mediaStreamTrack: screenStream.getVideoTracks()[0] });
 
-            // Заменить текущий видеотрек
             if (rtc.localVideoTrack) {
                 await rtc.client.unpublish(rtc.localVideoTrack);
                 rtc.localVideoTrack.stop();
@@ -151,12 +171,45 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         }
     };
 
+    // Function to update display of remote users based on count and role
+    const updateRemoteDisplays = () => {
+        // Clear both displays first
+        clearMonitorTexture(tvRefs.remote);
+        if (role === "audience") {
+            clearMonitorTexture(tvRefs.local);
+        }
+
+        // For audience members, display up to two remote streams
+        if (role === "audience") {
+            if (remoteUsers.length >= 1) {
+                displayRemoteVideo(remoteUsers[0], tvRefs.remote);
+            }
+            if (remoteUsers.length >= 2) {
+                displayRemoteVideo(remoteUsers[1], tvRefs.local);
+            }
+        }
+        // For hosts, just show the first remote user on remote display
+        else if (role === "host" && remoteUsers.length >= 1) {
+            displayRemoteVideo(remoteUsers[0], tvRefs.remote);
+        }
+    };
+
+    // Update displays whenever remote users or role changes
+    useEffect(() => {
+        if (isJoined) {
+            updateRemoteDisplays();
+        }
+    }, [remoteUsers, role, isJoined]);
+
     const setupEventListeners = (client) => {
         client.on("user-published", async (user, mediaType) => {
             await client.subscribe(user, mediaType);
             if (mediaType === "video") {
-                setRemoteUsers(prev => prev.includes(user.uid) ? prev : [...prev, user]);
-                displayRemoteVideo(user, tvRefs.remote);
+                setRemoteUsers(prev => {
+                    if (prev.some(u => u.uid === user.uid)) return prev;
+                    return [...prev, user];
+                });
+                // Display logic moved to useEffect with updateRemoteDisplays
             }
             if (mediaType === "audio") {
                 user.audioTrack?.play();
@@ -164,20 +217,22 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         });
 
         client.on("user-unpublished", (user, mediaType) => {
-            setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-            if (mediaType === 'video') {
-                clearMonitorTexture(tvRefs.remote);
+            if (mediaType === "video") {
+                setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
+                // Removing display logic from here, updateRemoteDisplays will handle it
             }
         });
     };
 
     useEffect(() => {
-        rtc.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        rtc.client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
         setupEventListeners(rtc.client);
         return () => {
             rtc.localAudioTrack?.close();
             rtc.localVideoTrack?.close();
             rtc.client?.leave();
+            clearMonitorTexture(tvRefs.remote);
+            clearMonitorTexture(tvRefs.local);
         };
     }, []);
 
@@ -186,23 +241,39 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
             <div className={`${styles.phoneScreen} flex flex-col items-center justify-between p-4 bg-gray-200 border rounded-md shadow-md`}>
                 <div className={`${styles.emailHeader} text-center py-2`}>{userEmail}</div>
                 <div className={styles.participantsList}>
-                    <h3>Participants ({remoteUsers.length + 1})</h3>
+                    <h3>Participants ({remoteUsers.length + (role === "host" ? 1 : 0)})</h3>
                 </div>
 
                 {isJoined ? (
                     <>
                         <button onClick={leaveChannel} className={`${styles.leaveButton}`}>Leave Call</button>
-                        <button onClick={toggleCamera} className={`${styles.micAndCameraButton} ${!isCameraOn ? styles.redButton : ''}`}>Camera</button>
-                        <button onClick={toggleMic} className={`${styles.micAndCameraButton} ${!isMicOn ? styles.redButton : ''}`}>Mic</button>
-                        <button onClick={toggleScreenShare} className={`${styles.micAndCameraButton} ${isScreenSharing ? styles.redButton : ''}`}>
-                            {isScreenSharing ? "Stop Screen Share" : "Start Screen Share"}
-                        </button>
+                        {role === "host" && (
+                            <>
+                                <button onClick={toggleCamera} className={`${styles.micAndCameraButton} ${!isCameraOn ? styles.redButton : ''}`}>Camera</button>
+                                <button onClick={toggleMic} className={`${styles.micAndCameraButton} ${!isMicOn ? styles.redButton : ''}`}>Mic</button>
+                                <button onClick={toggleScreenShare} className={`${styles.micAndCameraButton} ${isScreenSharing ? styles.redButton : ''}`}>
+                                    {isScreenSharing ? "Stop Screen Share" : "Start Screen Share"}
+                                </button>
+                            </>
+                        )}
                     </>
                 ) : (
-                    <button onClick={joinChannel} className={`${styles.joinButton}`}>Join Call</button>
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={() => joinChannel("host")}
+                            className={`${styles.joinButton}`}
+                        >
+                            Join as Host
+                        </button>
+                        <button
+                            onClick={() => joinChannel("audience")}
+                            className={`${styles.joinButton}`}
+                        >
+                            Join as Audience
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
     );
-
 };
