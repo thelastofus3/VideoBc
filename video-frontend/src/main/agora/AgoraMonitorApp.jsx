@@ -188,17 +188,21 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
                 <div className={styles.participantsList}>
                     <h3>Participants ({remoteUsers.length + 1})</h3>
                 </div>
+
                 {isJoined ? (
-                    <button onClick={leaveChannel} className={`${styles.leaveButton}`}>Leave Call</button>
+                    <>
+                        <button onClick={leaveChannel} className={`${styles.leaveButton}`}>Leave Call</button>
+                        <button onClick={toggleCamera} className={`${styles.micAndCameraButton} ${!isCameraOn ? styles.redButton : ''}`}>Camera</button>
+                        <button onClick={toggleMic} className={`${styles.micAndCameraButton} ${!isMicOn ? styles.redButton : ''}`}>Mic</button>
+                        <button onClick={toggleScreenShare} className={`${styles.micAndCameraButton} ${isScreenSharing ? styles.redButton : ''}`}>
+                            {isScreenSharing ? "Stop Screen Share" : "Start Screen Share"}
+                        </button>
+                    </>
                 ) : (
                     <button onClick={joinChannel} className={`${styles.joinButton}`}>Join Call</button>
                 )}
-                <button onClick={toggleCamera} className={`${styles.micAndCameraButton} ${!isCameraOn ? styles.redButton : ''}`}>Camera</button>
-                <button onClick={toggleMic} className={`${styles.micAndCameraButton} ${!isMicOn ? styles.redButton : ''}`}>Mic</button>
-                <button onClick={toggleScreenShare} className={`${styles.micAndCameraButton} ${isScreenSharing ? styles.redButton : ''}`}>
-                    {isScreenSharing ? "Stop Screen Share" : "Start Screen Share"}
-                </button>
             </div>
         </div>
     );
+
 };

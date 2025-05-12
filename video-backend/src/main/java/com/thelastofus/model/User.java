@@ -37,5 +37,4 @@ public class User implements Serializable {
     @Enumerated(value = EnumType.STRING)
     Role role;
 
-
 }
