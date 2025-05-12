@@ -20,6 +20,7 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
     const [options] = useState(agoraConfig);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     const [role, setRole] = useState(null); // "host" | "audience"
+    const [error, setError] = useState(null);
 
     const originalRemoteMaterial = useRef(null);
     const originalLocalMaterial = useRef(null);
@@ -78,8 +79,64 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         await rtc.client.publish([rtc.localAudioTrack, rtc.localVideoTrack]);
     };
 
+    // Function to register with backend
+    const registerWithBackend = async (selectedRole) => {
+        try {
+            const response = await fetch('http://localhost:8080/room/join', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    roomCode: roomCode,
+                    role: selectedRole,
+                    uid: options.uid.toString()
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to join room');
+            }
+
+            return true;
+        } catch (error) {
+            setError(error.message);
+            return false;
+        }
+    };
+
+    // Function to unregister from backend
+    const unregisterFromBackend = async () => {
+        try {
+            await fetch('http://localhost:8080/room/leave', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    roomCode: roomCode,
+                    role: role,
+                    uid: options.uid.toString()
+                })
+            });
+        } catch (error) {
+            console.error("Error leaving room in backend:", error);
+        }
+    };
+
     const joinChannel = async (selectedRole) => {
         try {
+            setError(null);
+
+            // First register with backend if role is host
+            if (selectedRole === "host") {
+                const allowed = await registerWithBackend(selectedRole);
+                if (!allowed) {
+                    return; // Don't proceed if backend registration failed
+                }
+            }
+
             setRole(selectedRole);
             await rtc.client.setClientRole(selectedRole);
             await rtc.client.join(
@@ -97,10 +154,19 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
             setIsJoined(true);
         } catch (error) {
             console.error("Error joining channel:", error);
+            setError("Failed to join the channel. Please try again.");
+            // Clean up backend registration if Agora join failed
+            if (selectedRole === "host") {
+                await unregisterFromBackend();
+            }
         }
     };
 
     const leaveChannel = async () => {
+        if (role === "host") {
+            await unregisterFromBackend();
+        }
+
         await rtc.client?.leave();
         rtc.localAudioTrack?.close();
         rtc.localVideoTrack?.close();
@@ -109,8 +175,23 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         setRemoteUsers([]);
         setIsJoined(false);
         setRole(null);
+        setError(null);
         navigate("/");
     };
+
+    // Add window beforeunload handler to ensure cleanup
+    useEffect(() => {
+        const handleBeforeUnload = async (e) => {
+            if (isJoined && role === "host") {
+                await unregisterFromBackend();
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isJoined, role]);
 
     const toggleCamera = async () => {
         if (rtc.localVideoTrack) {
@@ -228,6 +309,9 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
         rtc.client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
         setupEventListeners(rtc.client);
         return () => {
+            if (isJoined && role === "host") {
+                unregisterFromBackend();
+            }
             rtc.localAudioTrack?.close();
             rtc.localVideoTrack?.close();
             rtc.client?.leave();
@@ -243,6 +327,12 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
                 <div className={styles.participantsList}>
                     <h3>Participants ({remoteUsers.length + (role === "host" ? 1 : 0)})</h3>
                 </div>
+
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        {error}
+                    </div>
+                )}
 
                 {isJoined ? (
                     <>
