@@ -32,7 +32,7 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
                 <div className={`${styles.emailHeader} text-center py-2`}>{userEmail}</div>
 
                 <div className={styles.participantsList}>
-                    <h3>Participants ({remoteUsers.length})</h3>
+                    <h3>Participants ({remoteUsers.length + 1})</h3>
                 </div>
 
                 {error && (

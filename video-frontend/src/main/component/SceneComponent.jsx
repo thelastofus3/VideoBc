@@ -9,32 +9,49 @@ import {Leva, useControls} from "leva";
 import * as THREE from "three";
 
 // eslint-disable-next-line react/prop-types
-export function SceneComponent({userEmail, roomCode}) {
+export function SceneComponent({ userEmail, roomCode, splatPath }) {
     function Loader() {
-        const {progress} = useProgress()
-        return <Html center>{progress.toFixed(2)} % loaded</Html>
+        const { progress } = useProgress();
+        return <Html center>{progress.toFixed(2)} % loaded</Html>;
     }
 
-    const tvRefs = {
-        local: useRef(),
-        remote: useRef(),
-    };
-
+    const tvRefs = { local: useRef(), remote: useRef() };
     const videoRef = useRef(null);
     const [videoTexture, setVideoTexture] = useState(null);
-
     const tvModel = useLoader(GLTFLoader, `${import.meta.env.BASE_URL}tv_gs.gltf`);
 
-    const localTVPos = useControls("Local TV", {
-        x: { value: -20, min: -50, max: 50, step: 0.1 },
-        y: { value: -6.4, min: -20, max: 20, step: 0.1 },
-        z: { value: 2.7, min: -20, max: 20, step: 0.1 },
+    const roomPresets = {
+        B601: {
+            localTV: { x: -20, y: -6.4, z: 2.7, scale: 1, rotationY: Math.PI / 3.4 },
+            remoteTV: { x: -18.7, y: -7.6, z: 0.7, scale: 1.7, rotationY: Math.PI / 2.2 },
+        },
+        B405: {
+            localTV: { x: -22, y: -6, z: 3, scale: 1.3, rotationY: Math.PI / 3.2 },
+            remoteTV: { x: -21, y: -7, z: 1, scale: 1.9, rotationY: Math.PI / 2.1 },
+        },
+        default: {
+            localTV: { x: 0, y: 0, z: 0, scale: 1, rotationY: 0 },
+            remoteTV: { x: 0, y: 0, z: 0, scale: 1, rotationY: 0 },
+        },
+    };
+
+    const roomName = splatPath.replace('.splat', '');
+    const defaults = roomPresets[roomName] || roomPresets.default;
+
+    const localTV = useControls('Local TV', {
+        x: { value: defaults.localTV.x, min: -50, max: 50, step: 0.1 },
+        y: { value: defaults.localTV.y, min: -20, max: 20, step: 0.1 },
+        z: { value: defaults.localTV.z, min: -20, max: 20, step: 0.1 },
+        scale: { value: defaults.localTV.scale, min: 0.1, max: 5, step: 0.1 },
+        rotationY: { value: defaults.localTV.rotationY, min: 0, max: Math.PI * 2, step: 0.01 },
     });
 
-    const remoteTVPos = useControls("Remote TV", {
-        x: { value: -18.7, min: -50, max: 50, step: 0.1 },
-        y: { value: -7.6, min: -20, max: 20, step: 0.1 },
-        z: { value: 0.7, min: -20, max: 20, step: 0.1 },
+    const remoteTV = useControls('Remote TV', {
+        x: { value: defaults.remoteTV.x, min: -50, max: 50, step: 0.1 },
+        y: { value: defaults.remoteTV.y, min: -20, max: 20, step: 0.1 },
+        z: { value: defaults.remoteTV.z, min: -20, max: 20, step: 0.1 },
+        scale: { value: defaults.remoteTV.scale, min: 0.1, max: 5, step: 0.1 },
+        rotationY: { value: defaults.remoteTV.rotationY, min: 0, max: Math.PI * 2, step: 0.01 },
     });
 
     useEffect(() => {
@@ -49,48 +66,39 @@ export function SceneComponent({userEmail, roomCode}) {
 
     useEffect(() => {
         if (!tvModel || !videoTexture) return;
-        const screenMesh = tvModel.scene.getObjectByName("Screen"); // Имя объекта внутри GLTF, замени на своё
-        if (screenMesh) {
-            screenMesh.material = new THREE.MeshBasicMaterial({map: videoTexture});
-        }
+        const screenMesh = tvModel.scene.getObjectByName('Screen');
+        if (screenMesh) screenMesh.material = new THREE.MeshBasicMaterial({ map: videoTexture });
     }, [tvModel, videoTexture]);
 
     return (
         <div id="canvas-container">
-            <Leva collapsed={false}/>
-            <AgoraMonitorApp tvRefs={tvRefs} userEmail={userEmail} roomCode={roomCode}/>
+            <Leva collapsed={false} />
+            <AgoraMonitorApp tvRefs={tvRefs} userEmail={userEmail} roomCode={roomCode} />
             <Canvas>
-                <Suspense fallback={<Loader/>}>
-                    <PerspectiveCamera
-                        makeDefault
-                        fov={65}
-                        aspect={window.innerWidth / window.innerHeight}
-                        position={[-13, -4, 0]}
-                        far={1500}
-                        near={0.1}
-                    />
+                <Suspense fallback={<Loader />}>
+                    <PerspectiveCamera makeDefault fov={65} aspect={window.innerWidth / window.innerHeight} position={[-13, -4, 0]} far={1500} near={0.1} />
+
                     <primitive
                         object={tvModel.scene.clone()}
-                        key={1}
                         ref={tvRefs.local}
-                        position={[localTVPos.x, localTVPos.y, localTVPos.z]}
-                        rotation={[0, Math.PI / 3.4, 0]}
-                        children-0-castShadow
+                        position={[localTV.x, localTV.y, localTV.z]}
+                        rotation={[0, localTV.rotationY, 0]}
+                        scale={[localTV.scale, localTV.scale, localTV.scale]}
                     />
+
                     <primitive
                         object={tvModel.scene.clone()}
-                        key={2}
                         ref={tvRefs.remote}
-                        position={[remoteTVPos.x, remoteTVPos.y, remoteTVPos.z]}
-                        rotation={[0, Math.PI / 2.2, 0]}
-                        scale={[1.7, 1.7, 1.7]}
-                        children-0-castShadow
+                        position={[remoteTV.x, remoteTV.y, remoteTV.z]}
+                        rotation={[0, remoteTV.rotationY, 0]}
+                        scale={[remoteTV.scale, remoteTV.scale, remoteTV.scale]}
                     />
-                    <GaussianSplatViewer/>
-                    <Player/>
-                    <Environment preset="sunset" background/>
+
+                    <GaussianSplatViewer splatPath={splatPath} />
+                    <Player />
+                    <Environment preset="sunset" background />
                 </Suspense>
             </Canvas>
         </div>
-    )
+    );
 }

@@ -3,25 +3,29 @@ import * as THREE from "three";
 import * as GaussianSplats3D from "@mkkellogg/gaussian-splats-3d";
 import {useThree} from "@react-three/fiber";
 
-export const GaussianSplatViewer = () => {
-    const {scene} = useThree();
+export const GaussianSplatViewer = ({ splatPath }) => {
+    const { scene } = useThree();
+
+    const transforms = splatPath === 'B602.splat'
+        ? { posX: 0, posY: -2, posZ: 1, scale: 1, rotX: Math.PI, rotY: 0, rotZ: 0 }
+        : { posX: -15, posY: -6.5, posZ: 1, scale: 5, rotX: Math.PI, rotY: 0, rotZ: 0 };
 
     useEffect(() => {
         const viewer = new GaussianSplats3D.DropInViewer({
             dynamicScene: true,
         });
 
+        const quaternion = new THREE.Quaternion()
+            .setFromEuler(new THREE.Euler(transforms.rotX, transforms.rotY, transforms.rotZ));
+
         viewer.addSplatScenes(
             [
                 {
-                    path: `${import.meta.env.BASE_URL}B601.splat`,
+                    path: `${import.meta.env.BASE_URL}${splatPath}`,
                     splatAlphaRemovalThreshold: 10,
-                    rotation: new THREE.Quaternion()
-                        .setFromUnitVectors(
-                            new THREE.Vector3(0, 0, 0).normalize(),
-                            new THREE.Vector3(0, 0, 0)
-                        )
-                        .toArray(),
+                    position: [transforms.posX, transforms.posY, transforms.posZ],
+                    scale: [transforms.scale, transforms.scale, transforms.scale],
+                    rotation: quaternion.toArray(),
                 },
             ],
             true
@@ -32,7 +36,7 @@ export const GaussianSplatViewer = () => {
         return () => {
             scene.remove(viewer);
         };
-    }, [scene]);
+    }, [scene, splatPath]);
 
     return null;
 };
