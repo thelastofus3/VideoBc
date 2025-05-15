@@ -37,16 +37,6 @@ export function SceneComponent({userEmail, roomCode}) {
         z: { value: 0.7, min: -20, max: 20, step: 0.1 },
     });
 
-    const handleVideoUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            const video = videoRef.current;
-            video.src = url;
-            video.play();
-        }
-    };
-
     useEffect(() => {
         if (videoRef.current) {
             const texture = new THREE.VideoTexture(videoRef.current);

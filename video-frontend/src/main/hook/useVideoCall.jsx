@@ -62,13 +62,11 @@ export const useVideoCall = (tvRefs, roomCode) => {
     }, [isJoined, role]);
 
     const updateDisplays = () => {
-        // Clear monitors
         monitorService.clearMonitorTexture(tvRefs.remote);
         if (role === "audience") {
             monitorService.clearMonitorTexture(tvRefs.local);
         }
 
-        // Display videos based on role
         if (role === "audience") {
             if (remoteUsers.length >= 1) {
                 const videoElement = monitorService.createVideoElement(remoteUsers[0].videoTrack);
@@ -80,13 +78,11 @@ export const useVideoCall = (tvRefs, roomCode) => {
             }
         }
         else if (role === "host") {
-            // Display local video
             if (agoraService.getLocalVideoTrack()) {
                 const localVideoElement = monitorService.createVideoElement(agoraService.getLocalVideoTrack());
                 monitorService.updateMonitorTexture(localVideoElement, tvRefs.local);
             }
 
-            // Display remote video if available
             if (remoteUsers.length >= 1) {
                 const videoElement = monitorService.createVideoElement(remoteUsers[0].videoTrack);
                 monitorService.updateMonitorTexture(videoElement, tvRefs.remote);
@@ -98,7 +94,6 @@ export const useVideoCall = (tvRefs, roomCode) => {
         try {
             setError(null);
 
-            // Register with backend if joining as host
             if (selectedRole === "host") {
                 try {
                     await backendService.registerWithBackend(
@@ -112,14 +107,12 @@ export const useVideoCall = (tvRefs, roomCode) => {
                 }
             }
 
-            // Join Agora channel
             const success = await agoraService.joinChannel(selectedRole, roomCode);
             if (!success) return;
 
             setRole(selectedRole);
             setIsJoined(true);
 
-            // Update displays
             if (selectedRole === "host") {
                 const localVideoElement = monitorService.createVideoElement(agoraService.getLocalVideoTrack());
                 monitorService.updateMonitorTexture(localVideoElement, tvRefs.local);
@@ -175,7 +168,6 @@ export const useVideoCall = (tvRefs, roomCode) => {
                 setIsScreenSharing(true);
             }
 
-            // Update local display
             if (role === "host") {
                 const localVideoElement = monitorService.createVideoElement(agoraService.getLocalVideoTrack());
                 monitorService.updateMonitorTexture(localVideoElement, tvRefs.local);

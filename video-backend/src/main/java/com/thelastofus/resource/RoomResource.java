@@ -1,10 +1,8 @@
 package com.thelastofus.resource;
 
-import com.thelastofus.dto.JoinRequest;
+import com.thelastofus.dto.video.JoinRequest;
 import com.thelastofus.model.RoomRole;
 import com.thelastofus.service.RoomManager;
-import com.thelastofus.service.impl.RoomManagerImpl;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
