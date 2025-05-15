@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import {Suspense, useEffect, useRef, useState} from "react";
 import {GaussianSplatViewer} from "../gaussian/GaussianSplatViewer.jsx";
 import {Player} from "../player/Player.jsx";
-import {AgoraMonitorApp} from "../agora/AgoraMonitorApp.jsx";
+import {AgoraMonitorApp} from "./AgoraMonitorApp.jsx";
 import {Leva, useControls} from "leva";
 import * as THREE from "three";
 

@@ -1,6 +1,6 @@
 package com.thelastofus.dto.user;
 
-import com.thelastofus.model.Role;
+import com.thelastofus.model.UserRole;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -22,6 +22,6 @@ public class UserResponse implements Serializable {
     @Schema(name = "email", example = "user@gmail.com")
     String email;
     @Schema(name = "role", example = "ROLE_USER")
-    Role role;
+    UserRole role;
 
 }

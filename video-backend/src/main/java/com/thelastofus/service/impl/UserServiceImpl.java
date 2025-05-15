@@ -7,7 +7,7 @@ import com.thelastofus.exception.PasswordMatchesException;
 import com.thelastofus.exception.ResourceNotFoundException;
 import com.thelastofus.exception.UsernameAlreadyExistsException;
 import com.thelastofus.mapper.UserMapper;
-import com.thelastofus.model.Role;
+import com.thelastofus.model.UserRole;
 import com.thelastofus.model.User;
 import com.thelastofus.repository.UserRepository;
 import com.thelastofus.security.config.PasswordEncoder;
@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService {
                 .username(userRequest.getUsername())
                 .email(userRequest.getEmail())
                 .password(passwordEncoder.encode(userRequest.getPassword()))
-                .role(Role.ROLE_USER)
+                .role(UserRole.ROLE_USER)
                 .build());
     }
 

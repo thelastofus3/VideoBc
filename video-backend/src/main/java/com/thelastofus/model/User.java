@@ -35,6 +35,6 @@ public class User implements Serializable {
     @Schema(name = "role", example = "ROLE_USER")
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
-    Role role;
+    UserRole role;
 
 }

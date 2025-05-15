@@ -3,7 +3,7 @@ import {BrowserRouter, Route, Routes} from "react-router-dom";
 import {App} from "./main/App.jsx";
 import {Login} from "./auth/Login.jsx";
 import {Registration} from "./auth/Registration.jsx";
-import {RoomSelection} from "./room/RoomSelection.jsx";
+import {RoomSelection} from "./main/component/RoomSelection.jsx";
 
 export const Router = () => {
     return (

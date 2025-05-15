@@ -1,5 +1,5 @@
 package com.thelastofus.model;
 
-public enum Role {
+public enum UserRole {
     ROLE_USER
 }

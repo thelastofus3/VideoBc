@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {userService} from "./service/MainService.jsx";
-import {SceneComponent} from "./scene/SceneComponent.jsx";
+import {SceneComponent} from "./component/SceneComponent.jsx";
 
 export function App() {
     const { roomCode } = useParams();
