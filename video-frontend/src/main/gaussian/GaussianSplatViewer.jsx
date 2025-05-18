@@ -6,10 +6,12 @@ import {useThree} from "@react-three/fiber";
 export const GaussianSplatViewer = ({ splatPath }) => {
     const { scene } = useThree();
 
-    const transforms = splatPath === 'B602.splat'
-        ? { posX: 0, posY: -2, posZ: 1, scale: 1, rotX: Math.PI, rotY: 0, rotZ: 0 }
+    console.log("In room:", splatPath)
+    const transforms = splatPath === 'B601.splat'
+        ? { posX: 0, posY: 0, posZ: 0, scale: 1, rotX: 0, rotY: 0, rotZ: 0 }
         : { posX: -15, posY: -6.5, posZ: 1, scale: 5, rotX: Math.PI, rotY: 0, rotZ: 0 };
 
+    console.log("transforms", transforms)
     useEffect(() => {
         const viewer = new GaussianSplats3D.DropInViewer({
             dynamicScene: true,

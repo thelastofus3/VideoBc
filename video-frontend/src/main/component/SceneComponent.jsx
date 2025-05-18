@@ -20,14 +20,15 @@ export function SceneComponent({ userEmail, roomCode, splatPath }) {
     const [videoTexture, setVideoTexture] = useState(null);
     const tvModel = useLoader(GLTFLoader, `${import.meta.env.BASE_URL}tv_gs.gltf`);
 
+    console.log("In TV:", splatPath)
     const roomPresets = {
         B601: {
             localTV: { x: -20, y: -6.4, z: 2.7, scale: 1, rotationY: Math.PI / 3.4 },
             remoteTV: { x: -18.7, y: -7.6, z: 0.7, scale: 1.7, rotationY: Math.PI / 2.2 },
         },
         B405: {
-            localTV: { x: -22, y: -6, z: 3, scale: 1.3, rotationY: Math.PI / 3.2 },
-            remoteTV: { x: -21, y: -7, z: 1, scale: 1.9, rotationY: Math.PI / 2.1 },
+            localTV: { x: -15.8, y: -5.5, z: 3.7, scale: 0.8, rotationY: 2.4 },
+            remoteTV: { x: -13.9, y: -5.5, z: 1.6, scale: 0.8, rotationY: 2.4 },
         },
         default: {
             localTV: { x: 0, y: 0, z: 0, scale: 1, rotationY: 0 },
