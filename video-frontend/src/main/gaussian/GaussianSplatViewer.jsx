@@ -11,7 +11,6 @@ export const GaussianSplatViewer = ({ splatPath }) => {
         ? { posX: 0, posY: 0, posZ: 0, scale: 1, rotX: 0, rotY: 0, rotZ: 0 }
         : { posX: -15, posY: -6.5, posZ: 1, scale: 5, rotX: Math.PI, rotY: 0, rotZ: 0 };
 
-    console.log("transforms", transforms)
     useEffect(() => {
         const viewer = new GaussianSplats3D.DropInViewer({
             dynamicScene: true,

@@ -73,7 +73,7 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
                         )}
                     </>
                 ) : (
-                    <div className="flex flex-col gap-2">
+                    <>
                         <button
                             onClick={() => joinCall("host")}
                             className={`${styles.joinButton}`}
@@ -87,7 +87,7 @@ export const AgoraMonitorApp = ({ tvRefs, userEmail, roomCode }) => {
                         >
                             Join as Audience
                         </button>
-                    </div>
+                    </>
                 )}
             </div>
         </div>

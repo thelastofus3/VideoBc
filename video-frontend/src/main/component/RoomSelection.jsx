@@ -22,7 +22,7 @@ export const RoomSelection = () => {
                 <h2 className="mb-3">Select Room & Splat</h2>
 
                 <div className="mb-3" style={{ maxWidth: '300px' }}>
-                    <label htmlFor="splat-select" className="form-label">Select Splat</label>
+                    <label htmlFor="splat-select" className="form-label d-flex justify-content-center a">Select Splat</label>
                     <select
                         id="splat-select"
                         className="form-select"
@@ -30,7 +30,7 @@ export const RoomSelection = () => {
                         onChange={e => setSplatPath(e.target.value)}
                     >
                         {availableSplats.map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s.replace('.splat', '')}</option>
                         ))}
                     </select>
                 </div>

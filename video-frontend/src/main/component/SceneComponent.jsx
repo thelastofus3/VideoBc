@@ -20,7 +20,6 @@ export function SceneComponent({ userEmail, roomCode, splatPath }) {
     const [videoTexture, setVideoTexture] = useState(null);
     const tvModel = useLoader(GLTFLoader, `${import.meta.env.BASE_URL}tv_gs.gltf`);
 
-    console.log("In TV:", splatPath)
     const roomPresets = {
         B601: {
             localTV: { x: -20, y: -6.4, z: 2.7, scale: 1, rotationY: Math.PI / 3.4 },
